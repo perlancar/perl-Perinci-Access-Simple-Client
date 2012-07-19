@@ -114,12 +114,11 @@ sub request {
         $sock->syswrite("J" . length($req_json) . "\015\012");
         $sock->syswrite($req_json);
         $sock->syswrite("\015\012");
+        $log->tracef("Sent request to server: %s", $req_json);
 
         # XXX alarm/timeout
-        say "D1";
         my $line = $sock->getline;
         $log->tracef("Got line from server: %s", $line);
-        say "D2";
         if (!$line) {
             delete $self->{_conns}{$key};
             return [500, "Empty response from server"];
