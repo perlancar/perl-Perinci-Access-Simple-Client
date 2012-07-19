@@ -1,5 +1,10 @@
 Revision history for Perinci-Access-TCP-Client
 
+0.02     2012-07-19 (SHARYANTO)
+
+         Support single-line request (Riap 1.1.15).
+
+
 0.01     2012-07-19 (SHARYANTO)
 
          First release.
