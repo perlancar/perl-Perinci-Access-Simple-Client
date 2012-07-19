@@ -111,9 +111,13 @@ sub request {
         $e = $@;
         return [400, "Can't encode request as JSON: $e"] if $e;
 
-        $sock->syswrite("J" . length($req_json) . "\015\012");
-        $sock->syswrite($req_json);
-        $sock->syswrite("\015\012");
+        if (length($req_json) > 1000) {
+            $sock->syswrite("J" . length($req_json) . "\015\012");
+            $sock->syswrite($req_json);
+            $sock->syswrite("\015\012");
+        } else {
+            $sock->syswrite("j$req_json\015\012");
+        }
         $log->tracef("Sent request to server: %s", $req_json);
 
         # XXX alarm/timeout
