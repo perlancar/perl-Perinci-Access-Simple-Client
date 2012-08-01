@@ -1,5 +1,11 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.07     2012-08-01 (SHARYANTO)
+
+         No functional changes. Fixed avoid Perl undef warning in DESTROY()
+         (take 2).
+
+
 0.06     2012-08-01 (SHARYANTO)
 
          No functional changes. Fixed avoid Perl undef warning in DESTROY().
