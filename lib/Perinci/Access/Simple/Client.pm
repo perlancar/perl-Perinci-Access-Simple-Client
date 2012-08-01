@@ -127,8 +127,8 @@ sub request {
                 }
             } else {
                 if (kill(0, $cache->{pid})) {
-                    $in  = $cache->{chld_in};
-                    $out = $cache->{chld_out};
+                    $in  = $cache->{chld_out};
+                    $out = $cache->{chld_in};
                 } else {
                     $log->infof(
                         "Process (%s) seems dead/unsignalable, discarded",
@@ -178,14 +178,14 @@ sub request {
                     String::ShellQuote::shell_quote($_) } @$args) : "");
 
                 # using shell
-                #my $pid = IPC::Open2::open2($out, $in, $cmd, @$args);
+                #my $pid = IPC::Open2::open2($in, $out, $cmd, @$args);
 
                 # not using shell
-                my $pid = IPC::Open2::open2($out, $in, $path, @$args);
+                my $pid = IPC::Open2::open2($in, $out, $path, @$args);
 
                 if ($pid) {
                     $self->{_conns}{$cache_key} = {
-                        pid=>$pid, chld_out=>$out, chld_in=>$in};
+                        pid=>$pid, chld_out=>$in, chld_in=>$out};
                 } else {
                     $e = "Can't open2 $cmd: $!";
                     $do_retry++; goto RETRY;
