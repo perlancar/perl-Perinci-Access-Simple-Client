@@ -35,6 +35,7 @@ sub _init {
 sub _delete_cache {
     my ($self, $wanted) = @_;
     my $conns = $self->{_conns};
+    return unless $conns;
     for my $k ($wanted ? ($wanted) : (keys %$conns)) {
         if ($k =~ /^pipe:/) {
             waitpid($conns->{$k}{pid}, WNOHANG);
