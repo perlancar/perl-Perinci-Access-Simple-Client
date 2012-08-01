@@ -1,10 +1,13 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.06     2012-08-01 (SHARYANTO)
+
+         No functional changes. Fixed avoid Perl undef warning in DESTROY().
+
+
 0.05     2012-08-01 (SHARYANTO)
 
-         [BUG FIXES]
-
-         - Confused 'in' and 'out' in pipe.
+         No functional changes. Fixed confused 'in' and 'out' in pipe.
 
 
 0.04     2012-08-01 (SHARYANTO)
