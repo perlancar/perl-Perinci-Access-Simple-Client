@@ -1,5 +1,12 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.05     2012-08-01 (SHARYANTO)
+
+         [BUG FIXES]
+
+         - Confused 'in' and 'out' in pipe.
+
+
 0.04     2012-08-01 (SHARYANTO)
 
          - Rename module from Perinci::Access::TCP::Client to
