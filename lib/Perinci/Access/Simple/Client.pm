@@ -105,7 +105,7 @@ sub request {
                     "riap+pipe:/path/to/prog//arg1/arg2//Foo/Bar/func"];
         }
     }
-    $log->tracef("URI: scheme=%s, host=%s, port=%d, path=%s, args=%s, ceuri=%s",
+    $log->tracef("URI: scheme=%s, host=%s, port=%s, path=%s, args=%s, ceuri=%s",
                  $scheme, $host, $port, $path, $args, $uri);
     $req->{uri} = $uri;
 
