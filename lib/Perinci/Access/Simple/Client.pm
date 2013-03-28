@@ -275,9 +275,9 @@ sub request {
 
  # accessing a remote program via SSH client
  use URI::Escape;
- $res = $pa->request(call => 'riap+pipe:ssh/-T/-i/' .
+ $res = $pa->request(call => 'riap+pipe:ssh/-T/' .
                              uri_escape('user@host') .
-                             uri_escape('/path/to/program') .
+                             '/'.uri_escape('/path/to/program') .
                              '/'.uri_escape('first arg') .
                              '/'.uri_escape('second arg') .
                              '//Foo/Bar/func',
