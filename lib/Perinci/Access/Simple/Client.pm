@@ -319,6 +319,15 @@ Number of seconds to wait between retries.
 Send Riap request to $server_url.
 
 
+=head1 FAQ
+
+=head2 When I use riap+pipe, is the program executed for each Riap request?
+
+No, this module does some caching per $server_url, so if you call the same
+$server_url 10 times, the same program will be used and it will receive 10 Riap
+requests using the L<Riap::Simple> protocol.
+
+
 =head1 SEE ALSO
 
 L<Perinci::Access::Simple::Server>
