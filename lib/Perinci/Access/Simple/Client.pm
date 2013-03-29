@@ -277,7 +277,7 @@ sub request {
  use URI::Escape;
  $res = $pa->request(call => 'riap+pipe:' .
                              # program
-                             'ssh' . # program
+                             'ssh' .
                              # args
                              '//-T' .
                              '/'.uri_escape('user@host') .
