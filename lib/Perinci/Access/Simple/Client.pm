@@ -273,19 +273,14 @@ sub request {
  $res = $pa->request(call => 'riap+pipe:/path/to/prog//arg1/arg2//Foo/Bar/func',
                      {args => {a1=>1, a2=>2}});
 
- # accessing a remote program via SSH client
+ # an example for riap+pipe, accessing a remote program via SSH client
  use URI::Escape;
+ my @cmd = ('ssh', '-T', 'user@host', '/path/to/program', 'first arg', '2nd');
+ my $uri = "/Foo/Bar/func";
  $res = $pa->request(call => 'riap+pipe:' .
-                             # program
-                             'ssh' .
-                             # args
-                             '//-T' .
-                             '/'.uri_escape('user@host') .
-                             '/'.uri_escape('/path/to/program') .
-                             '/'.uri_escape('first arg') .
-                             '/'.uri_escape('second arg') .
-                             # Riap request uri
-                             '//Foo/Bar/func',
+                             uri_escape($cmd[0]) . '//' .
+                             join('/', map { uri_escape($_) } @cmd[1..@cmd-1]) . '/' .
+                             $uri,
                      {args => {a1=>1, a2=>2}});
 
 
