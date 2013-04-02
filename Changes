@@ -1,5 +1,18 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.12     2013-04-02 (SHARYANTO)
+
+         [ENHANCEMENTS]
+
+         - Make Riap request 'uri' optional, you do not have to specify it in
+           $server_url. This unclutters the $server_url.
+
+         - Add helpers request_{tcp,unix,pipe}() methods for even cleaner server
+           specification.
+
+         - Add some tests for $server_url parsing.
+
+
 0.11     2013-03-28 (SHARYANTO)
 
          No functional changes. Fix example in Synopsis (third time's the charm).
