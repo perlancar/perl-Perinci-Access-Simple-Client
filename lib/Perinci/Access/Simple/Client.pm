@@ -52,9 +52,19 @@ sub DESTROY {
 }
 
 sub request {
+    my $self = shift;
+    $self->_parse_or_request('request', @_);
+}
+
+sub _parse {
+    my $self = shift;
+    $self->_parse_or_request('parse', @_);
+}
+
+sub _parse_or_request {
     require JSON;
 
-    my ($self, $action, $server_url, $extra) = @_;
+    my ($self, $which, $action, $server_url, $extra) = @_;
     $log->tracef("=> %s\::request(action=%s, server_url=%s, extra=%s)",
                  __PACKAGE__, $action, $server_url, $extra);
     return [400, "Please specify server_url"] unless $server_url;
@@ -74,40 +84,61 @@ sub request {
         unless $scheme =~ /\Ariap\+(tcp|unix|pipe)\z/;
     my $opaque = $server_url->opaque;
     if ($scheme eq 'riap+tcp') {
-        if ($opaque =~ m!^//([^:/]+):(\d+)(/.*)!) {
+        if ($opaque =~ m!^//([^:/]+):(\d+)(/.*)?!) {
             ($host, $port, $uri) = ($1, $2, $3);
             $cache_key = "tcp:".lc($host).":$port";
         } else {
-            return [400, "Invalid URL, please supply host : port / entity uri".
-                ", e.g.: riap+tcp://localhost:5000/Foo/Bar/func"];
+            return [400, "Invalid riap+tcp URL, please use this format: ".
+                "riap+tcp://host:1234 or riap+tcp://host:1234/uri"];
         }
     } elsif ($scheme eq 'riap+unix') {
-        if ($opaque =~ m!(.+?)/(/.*)!) {
+        if ($opaque =~ m!(.+)/(/.*)!) {
             ($path, $uri) = (uri_unescape($1), $2);
+        } elsif ($opaque =~ m!(.+)!) {
+            $path = uri_unescape($1);
+        }
+        if (defined($path)) {
             my $apath = abs_path($path) or
                 return [500, "Can't find absolute path for $path"];
             $cache_key = "unix:$apath";
         } else {
-            return [400, "Invalid URL, please supply path // entity uri".
-                ", e.g.: riap+unix:/path/to/unix/socket//Foo/Bar/func"];
+            return [400, "Invalid riap+unix URL, please use this format: ".
+                        ", e.g.: riap+unix:/path/to/unix/socket or ".
+                            "riap+unix:/path/to/unix/socket//uri"];
         }
     } elsif ($scheme eq 'riap+pipe') {
         if ($opaque =~ m!(.+?)//(.*?)/(/.*)!) {
             ($path, $args, $uri) = (uri_unescape($1), $2, $3);
+        } elsif ($opaque =~ m!(.+?)//(.*)!) {
+            ($path, $args) = (uri_unescape($1), $2);
+        } elsif ($opaque =~ m!(.+)!) {
+            $path = uri_unescape($1);
+            $args = '';
+        }
+        if (defined($path)) {
             my $apath = abs_path($path) or
                 return [500, "Can't find absolute path for $path"];
             $args = [map {uri_unescape($_)} split m!/!, $args];
             $cache_key = "pipe:$apath ".join(" ", @$args);
         } else {
-            return [
-                400,
-                "Invalid URL, please supply path // args // entity uri, e.g: ".
-                    "riap+pipe:/path/to/prog//arg1/arg2//Foo/Bar/func"];
+            return [400, "Invalid riap+pipe URL, please use this format: ".
+                        "riap+pipe:/path/to/prog or ".
+                            "riap+pipe:/path/to/prog//arg1/arg2 or ".
+                            "riap+pipe:/path/to/prog//arg1/arg2//uri"];
         }
     }
+    $uri //= $req->{uri};
+    return [400, "Please specify request key 'uri'"] unless $uri;
     $log->tracef("Parsed URI, scheme=%s, host=%s, port=%s, path=%s, args=%s, ".
                      "ceuri=%s", $scheme, $host, $port, $path, $args, $uri);
     $req->{uri} = $uri;
+
+    if ($which eq 'parse') {
+        return [200, "OK", {
+            args=>$args, host=>$host, path=>$path, port=>$port,
+            scheme=>$scheme, uri=>$uri,
+        }];
+    }
 
     state $json = JSON->new->allow_nonref;
 
@@ -246,6 +277,23 @@ sub request {
     return [500, "$e (retried)"];
 }
 
+sub request_tcp {
+    my ($self, $action, $hostport, $extra) = @_;
+    $self->request($action, "riap+tcp://$hostport->[0]:$hostport->[1]", $extra);
+}
+
+sub request_unix {
+    my ($self, $action, $sockpath, $extra) = @_;
+    $self->request($action => "riap+unix:" . uri_escape($sockpath), $extra);
+}
+
+sub request_pipe {
+    my ($self, $action, $cmd, $extra) = @_;
+    $self->request($action => "riap+pipe:" . uri_escape($cmd->[0]) . "//" .
+                       join("/", map {uri_escape($_)} @$cmd[1..@$cmd-1]),
+                   $extra);
+}
+
 1;
 # ABSTRACT: Riap::Simple client
 
@@ -283,6 +331,16 @@ sub request {
                              $uri,
                      {args => {a1=>1, a2=>2}});
 
+ # helper for riap+tcp
+ $res = $pa->request_tcp(call => [$host, $port], \%extra);
+
+ # helper for riap+unix
+ $res = $pa->request_unix(call => $sockpath, \%extra);
+
+ # helper for riap+pipe
+ my @cmd = ('/path/to/program', 'first arg', '2nd');
+ $res = $pa->request_pipe(call => \@cmd, \%extra);
+
 
 =head1 DESCRIPTION
 
@@ -316,16 +374,41 @@ Number of seconds to wait between retries.
 
 =head2 $pa->request($action => $server_url, \%extra) => $res
 
-Send Riap request to $server_url.
+Send Riap request to C<$server_url>.
+
+=head2 $pa->request_tcp($action => [$host, $port], \%extra) => $res
+
+Helper/wrapper for request(), it forms C<$server_url> using:
+
+ "riap+tcp://$host:$port"
+
+You need to specify Riap request key 'uri' in C<%extra>.
+
+=head2 $pa->request_unix($action => $sockpath, \%extra) => $res
+
+Helper/wrapper for request(), it forms C<$server_url> using:
+
+ "riap+unix:" . uri_escape($sockpath)
+
+You need to specify Riap request key 'uri' in C<%extra>.
+
+=head2 $pa->request_pipe($action => \@cmd, \%extra) => $res
+
+Helper/wrapper for request(), it forms C<$server_url> using:
+
+ "riap+pipe:" . uri_escape($cmd[0]) . "//" .
+ join("/", map {uri_escape($_)} @cmd[1..@cmd-1])
+
+You need to specify Riap request key 'uri' in C<%extra>.
 
 
 =head1 FAQ
 
 =head2 When I use riap+pipe, is the program executed for each Riap request?
 
-No, this module does some caching per $server_url, so if you call the same
-$server_url 10 times, the same program will be used and it will receive 10 Riap
-requests using the L<Riap::Simple> protocol.
+No, this module does some caching, so if you call the same program (with the
+same arguments) 10 times, the same program will be used and it will receive 10
+Riap requests using the L<Riap::Simple> protocol.
 
 
 =head1 SEE ALSO

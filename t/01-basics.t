@@ -1,0 +1,99 @@
+#!perl -T
+
+use 5.010;
+use strict;
+use warnings;
+
+use Perinci::Access::Simple::Client;
+use Test::More 0.98;
+
+my $pa = Perinci::Access::Simple::Client->new;
+
+test_parse(
+    name   => 'unknown scheme = 400',
+    args   => [call => "riap+foo://localhost:1234/"],
+    status => 400,
+);
+test_parse(
+    name   => 'invalid riap+tcp 1',
+    args   => [call => "riap+tcp:xxx"],
+    status => 400,
+);
+test_parse(
+    name   => 'riap+tcp requires port',
+    args   => [call => "riap+tcp://localhost/"],
+    status => 400,
+);
+test_parse(
+    name   => 'riap+tcp requires uri',
+    args   => [call => "riap+tcp://localhost:1234"],
+    status => 400,
+);
+test_parse(
+    name   => 'riap+tcp ok 1',
+    args   => [call => "riap+tcp://localhost:1234/Foo/Bar"],
+    result => {args=>undef, host=>'localhost', path=>undef, port=>1234, scheme=>'riap+tcp', uri=>'/Foo/Bar'},
+);
+test_parse(
+    name   => 'riap+tcp ok 2 (uri via extra)',
+    args   => [call => "riap+tcp://localhost:1234", {uri=>'/Foo/Bar'}],
+    result => {args=>undef, host=>'localhost', path=>undef, port=>1234, scheme=>'riap+tcp', uri=>'/Foo/Bar'},
+);
+
+test_parse(
+    name   => 'invalid riap+unix 1',
+    args   => [call => "riap+unix:"],
+    status => 400,
+);
+test_parse(
+    name   => 'riap+unix ok 1',
+    args   => [call => "riap+unix:relpath//Foo/Bar"],
+    result => {args=>undef, host=>undef, path=>'relpath', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
+);
+test_parse(
+    name   => 'riap+unix ok 2 (uri via extra, path is unescaped)',
+    args   => [call => "riap+unix:/tmp/abs%20path", {uri=>'/Foo/Bar'}],
+    result => {args=>undef, host=>undef, path=>'/tmp/abs path', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
+);
+
+test_parse(
+    name   => 'invalid riap+pipe 1',
+    args   => [call => "riap+pipe:"],
+    status => 400,
+);
+test_parse(
+    name   => 'riap+pipe ok 1',
+    args   => [call => "riap+pipe:/tmp/program%201//arg1/arg%202//Foo/Bar"],
+    result => {args=>['arg1', 'arg 2'], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
+);
+test_parse(
+    name   => 'riap+pipe ok 2 (uri via extra)',
+    args   => [call => "riap+pipe:/tmp/program%201//arg1/arg%202", {uri=>'/Foo/Bar'}],
+    result => {args=>['arg1', 'arg 2'], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
+);
+test_parse(
+    name   => 'riap+pipe ok 2 (uri via extra, no args)',
+    args   => [call => "riap+pipe:/tmp/program%201", {uri=>'/Foo/Bar'}],
+    result => {args=>[], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
+);
+
+DONE_TESTING:
+done_testing();
+
+sub test_parse {
+    my %args = @_;
+
+    my $name = $args{name} // "parse $args{args}[1]";
+    subtest $name => sub {
+        my $res = $pa->_parse(@{ $args{args} });
+
+        my $status = $args{status} // 200;
+        is($res->[0], $status, "status") or diag explain $res;
+
+        if ($args{result}) {
+            is_deeply($res->[2], $args{result}, "result") or
+                diag explain $res->[2];
+        }
+    };
+}
+
