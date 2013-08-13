@@ -1,5 +1,10 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.13     2013-08-13 (SHARYANTO)
+
+         - Support parse_url().
+
+
 0.12     2013-04-02 (SHARYANTO)
 
          [ENHANCEMENTS]
