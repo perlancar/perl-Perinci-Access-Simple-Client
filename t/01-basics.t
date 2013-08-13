@@ -77,6 +77,19 @@ test_parse(
     result => {args=>[], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
 );
 
+subtest "parse_url()" => sub {
+    my $pa = Perinci::Access::Simple::Client->new;
+    is_deeply($pa->parse_url("riap+unix:/var/run/apid.sock//Foo/bar"),
+              {proto=>"riap+unix", path=>"/Foo/bar", unix_sock_path=>"/var/run/apid.sock"},
+              "riap+unix");
+    is_deeply($pa->parse_url("riap+tcp://localhost:5000/Foo/bar"),
+              {proto=>"riap+tcp" , path=>"/Foo/bar", host=>"localhost", port=>5000},
+              "riap+tcp");
+    is_deeply($pa->parse_url("riap+pipe:/path/to/prog//a1/a2//Foo/bar"),
+              {proto=>"riap+pipe", path=>"/Foo/bar", prog_path=>"/path/to/prog", args=>["a1", "a2"]},
+              "riap+pipe");
+};
+
 DONE_TESTING:
 done_testing();
 
@@ -96,4 +109,3 @@ sub test_parse {
         }
     };
 }
-
