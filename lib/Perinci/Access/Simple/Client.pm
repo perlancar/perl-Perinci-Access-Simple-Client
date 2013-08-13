@@ -58,19 +58,16 @@ sub request {
 
 sub _parse {
     my $self = shift;
-    $self->_parse_or_request('parse', @_);
+    $self->_parse_or_request('parse2', @_);
 }
 
+# which: parse0 = quick parse (for parse_url(), parse2 = more thorough parse
+# (for testing)
 sub _parse_or_request {
-    require JSON;
-
     my ($self, $which, $action, $server_url, $extra) = @_;
     $log->tracef("=> %s\::request(action=%s, server_url=%s, extra=%s)",
                  __PACKAGE__, $action, $server_url, $extra);
     return [400, "Please specify server_url"] unless $server_url;
-    my $req = { action=>$action, %{$extra // {}} };
-    my $res = $self->check_request($req);
-    return $res if $res;
 
     my ($uri,
         $cache_key,
@@ -97,14 +94,16 @@ sub _parse_or_request {
         } elsif ($opaque =~ m!(.+)!) {
             $path = uri_unescape($1);
         }
-        if (defined($path)) {
-            my $apath = abs_path($path) or
-                return [500, "Can't find absolute path for $path"];
-            $cache_key = "unix:$apath";
-        } else {
-            return [400, "Invalid riap+unix URL, please use this format: ".
-                        ", e.g.: riap+unix:/path/to/unix/socket or ".
-                            "riap+unix:/path/to/unix/socket//uri"];
+        unless ($which eq 'parse0') {
+            if (defined($path)) {
+                my $apath = abs_path($path) or
+                    return [500, "Can't find absolute path for $path"];
+                $cache_key = "unix:$apath";
+            } else {
+                return [400, "Invalid riap+unix URL, please use this format: ".
+                            ", e.g.: riap+unix:/path/to/unix/socket or ".
+                                "riap+unix:/path/to/unix/socket//uri"];
+            }
         }
     } elsif ($scheme eq 'riap+pipe') {
         if ($opaque =~ m!(.+?)//(.*?)/(/.*)!) {
@@ -115,31 +114,44 @@ sub _parse_or_request {
             $path = uri_unescape($1);
             $args = '';
         }
-        if (defined($path)) {
-            my $apath = abs_path($path) or
-                return [500, "Can't find absolute path for $path"];
-            $args = [map {uri_unescape($_)} split m!/!, $args];
-            $cache_key = "pipe:$apath ".join(" ", @$args);
-        } else {
-            return [400, "Invalid riap+pipe URL, please use this format: ".
-                        "riap+pipe:/path/to/prog or ".
-                            "riap+pipe:/path/to/prog//arg1/arg2 or ".
-                            "riap+pipe:/path/to/prog//arg1/arg2//uri"];
+        $args = [map {uri_unescape($_)} split m!/!, $args // ''];
+        unless ($which eq 'parse0') {
+            if (defined($path)) {
+                my $apath = abs_path($path) or
+                    return [500, "Can't find absolute path for $path"];
+                $cache_key = "pipe:$apath ".join(" ", @$args);
+            } else {
+                return [400, "Invalid riap+pipe URL, please use this format: ".
+                            "riap+pipe:/path/to/prog or ".
+                                "riap+pipe:/path/to/prog//arg1/arg2 or ".
+                                    "riap+pipe:/path/to/prog//arg1/arg2//uri"];
+            }
         }
     }
-    $uri //= $req->{uri};
-    return [400, "Please specify request key 'uri'"] unless $uri;
-    $log->tracef("Parsed URI, scheme=%s, host=%s, port=%s, path=%s, args=%s, ".
-                     "ceuri=%s", $scheme, $host, $port, $path, $args, $uri);
-    $req->{uri} = $uri;
 
-    if ($which eq 'parse') {
+    my $req;
+    my $res;
+
+    unless ($which eq 'parse0') {
+        $req = { action=>$action, %{$extra // {}} };
+        $res = $self->check_request($req);
+        return $res if $res;
+        $uri //= $req->{uri};
+        return [400, "Please specify request key 'uri'"] unless $uri;
+    }
+
+    if ($which =~ /parse/) {
         return [200, "OK", {
             args=>$args, host=>$host, path=>$path, port=>$port,
             scheme=>$scheme, uri=>$uri,
         }];
     }
 
+    $log->tracef("Parsed URI, scheme=%s, host=%s, port=%s, path=%s, args=%s, ".
+                     "ceuri=%s", $scheme, $host, $port, $path, $args, $uri);
+    $req->{uri} = $uri;
+
+    require JSON;
     state $json = JSON->new->allow_nonref;
 
     my $attempts = 0;
@@ -294,6 +306,27 @@ sub request_pipe {
                    $extra);
 }
 
+sub parse_url {
+    my ($self, $uri) = @_;
+
+    my $res0 = $self->_parse_or_request('parse0', 'dummy', $uri);
+    #use Data::Dump; dd $res0;
+    die "Can't parse URL $uri: $res0->[0] - $res0->[1]" unless $res0->[0]==200;
+    $res0 = $res0->[2];
+    my $res = {proto=>$res0->{scheme}, path=>$res0->{uri}};
+    if ($res->{proto} eq 'riap+unix') {
+        $res->{unix_sock_path} = $res0->{path};
+    } elsif ($res->{proto} eq 'riap+tcp') {
+        $res->{host} = $res0->{host};
+        $res->{port} = $res0->{port};
+    } elsif ($res->{proto} eq 'riap+pipe') {
+        $res->{prog_path} = $res0->{path};
+        $res->{args} = $res0->{args};
+    }
+
+    $res;
+}
+
 1;
 # ABSTRACT: Riap::Simple client
 
@@ -303,6 +336,8 @@ sub request_pipe {
  my $pa = Perinci::Access::Simple::Client->new;
 
  my $res;
+
+ ## performing Riap requests
 
  # to request server over TCP
  $res = $pa->request(call => 'riap+tcp://localhost:5678/Foo/Bar/func',
@@ -340,6 +375,12 @@ sub request_pipe {
  # helper for riap+pipe
  my @cmd = ('/path/to/program', 'first arg', '2nd');
  $res = $pa->request_pipe(call => \@cmd, \%extra);
+
+ ## parsing URL
+
+ $res = $pa->parse_url("riap+unix:/var/run/apid.sock//Foo/bar");   # -> {proto=>"riap+unix", path=>"/Foo/bar", unix_sock_path=>"/var/run/apid.sock"}
+ $res = $pa->parse_url("riap+tcp://localhost:5000/Foo/bar");       # -> {proto=>"riap+tcp" , path=>"/Foo/bar", host=>"localhost", port=>5000}
+ $res = $pa->parse_url("riap+pipe:/path/to/prog//a1/a2//Foo/bar"); # -> {proto=>"riap+pipe", path=>"/Foo/bar", prog_path=>"/path/to/prog", args=>["a1", "a2"]}
 
 
 =head1 DESCRIPTION
@@ -400,6 +441,8 @@ Helper/wrapper for request(), it forms C<$server_url> using:
  join("/", map {uri_escape($_)} @cmd[1..@cmd-1])
 
 You need to specify Riap request key 'uri' in C<%extra>.
+
+=head2 $pa->parse_url($server_url) => HASH
 
 
 =head1 FAQ
