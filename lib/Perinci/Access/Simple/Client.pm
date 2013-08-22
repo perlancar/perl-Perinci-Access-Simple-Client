@@ -36,6 +36,9 @@ sub new {
     $self;
 }
 
+# for older Perinci::Access::Base 0.28-, to remove later
+sub _init {}
+
 sub _delete_cache {
     my ($self, $wanted) = @_;
     my $conns = $self->{_conns};

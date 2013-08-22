@@ -1,5 +1,10 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.14     2013-08-22 (SHARYANTO)
+
+         - No functional changes. Adjust to Perinci::Access::Base 0.29.
+
+
 0.13     2013-08-13 (SHARYANTO)
 
          - Support parse_url().
