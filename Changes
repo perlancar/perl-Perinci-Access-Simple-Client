@@ -1,5 +1,10 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.15     2013-09-08 (SHARYANTO)
+
+         - No functional changes. Replace URI with URI::Split.
+
+
 0.14     2013-08-22 (SHARYANTO)
 
          - No functional changes. Adjust to Perinci::Access::Base 0.29.
