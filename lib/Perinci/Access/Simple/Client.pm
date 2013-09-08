@@ -8,7 +8,7 @@ use Log::Any '$log';
 use Cwd qw(abs_path);
 use POSIX qw(:sys_wait_h);
 use Tie::Cache;
-use URI;
+use URI::Split qw(uri_split);
 use URI::Escape;
 
 use parent qw(Perinci::Access::Base);
@@ -82,23 +82,25 @@ sub _parse_or_request {
         $path,        # unix & pipe
         $args         # pipe
     );
-    $server_url = URI->new($server_url) unless ref($server_url);
-    my $scheme = $server_url->scheme;
+    my ($srvsch, $srvauth, $srvpath, $srvquery, $srvfrag) =
+        uri_split($server_url);
+    $srvauth //= "";
+    $srvpath //= "";
     return [400, "Please supply only riap+tcp/riap+unix/riap+pipe URL"]
-        unless $scheme =~ /\Ariap\+(tcp|unix|pipe)\z/;
-    my $opaque = $server_url->opaque;
-    if ($scheme eq 'riap+tcp') {
-        if ($opaque =~ m!^//([^:/]+):(\d+)(/.*)?!) {
-            ($host, $port, $uri) = ($1, $2, $3);
+        unless $srvsch =~ /\Ariap\+(tcp|unix|pipe)\z/;
+    if ($srvsch eq 'riap+tcp') {
+        if ($srvauth =~ m!^(.+):(\d+)$!) {
+            ($host, $port) = ($1, $2, $3);
+            $uri = $srvpath;
             $cache_key = "tcp:".lc($host).":$port";
         } else {
             return [400, "Invalid riap+tcp URL, please use this format: ".
                 "riap+tcp://host:1234 or riap+tcp://host:1234/uri"];
         }
-    } elsif ($scheme eq 'riap+unix') {
-        if ($opaque =~ m!(.+)/(/.*)!) {
+    } elsif ($srvsch eq 'riap+unix') {
+        if ($srvpath =~ m!(.+)/(/.*)!) {
             ($path, $uri) = (uri_unescape($1), $2);
-        } elsif ($opaque =~ m!(.+)!) {
+        } elsif ($srvpath =~ m!(.+)!) {
             $path = uri_unescape($1);
         }
         unless ($which eq 'parse0') {
@@ -112,12 +114,12 @@ sub _parse_or_request {
                                 "riap+unix:/path/to/unix/socket//uri"];
             }
         }
-    } elsif ($scheme eq 'riap+pipe') {
-        if ($opaque =~ m!(.+?)//(.*?)/(/.*)!) {
+    } elsif ($srvsch eq 'riap+pipe') {
+        if ($srvpath =~ m!(.+?)//(.*?)/(/.*)!) {
             ($path, $args, $uri) = (uri_unescape($1), $2, $3);
-        } elsif ($opaque =~ m!(.+?)//(.*)!) {
+        } elsif ($srvpath =~ m!(.+?)//(.*)!) {
             ($path, $args) = (uri_unescape($1), $2);
-        } elsif ($opaque =~ m!(.+)!) {
+        } elsif ($srvpath =~ m!(.+)!) {
             $path = uri_unescape($1);
             $args = '';
         }
@@ -141,22 +143,20 @@ sub _parse_or_request {
 
     unless ($which eq 'parse0') {
         $req = { action=>$action, %{$extra // {}} };
+        $uri ||= $req->{uri}; $req->{uri} //= $uri;
         $res = $self->check_request($req);
         return $res if $res;
-        $uri //= $req->{uri};
-        return [400, "Please specify request key 'uri'"] unless $uri;
     }
 
     if ($which =~ /parse/) {
         return [200, "OK", {
             args=>$args, host=>$host, path=>$path, port=>$port,
-            scheme=>$scheme, uri=>$uri,
+            scheme=>$srvsch, uri=>$uri,
         }];
     }
 
     $log->tracef("Parsed URI, scheme=%s, host=%s, port=%s, path=%s, args=%s, ".
-                     "ceuri=%s", $scheme, $host, $port, $path, $args, $uri);
-    $req->{uri} = $uri;
+                     "uri=%s", $srvsch, $host, $port, $path, $args, $uri);
 
     require JSON;
     state $json = JSON->new->allow_nonref;
@@ -171,7 +171,7 @@ sub _parse_or_request {
         my $cache = $self->{_conns}{$cache_key};
         # check cache staleness
         if ($cache) {
-            if ($scheme =~ /tcp|unix/) {
+            if ($srvsch =~ /tcp|unix/) {
                 if ($cache->{socket}->connected) {
                     $in = $out = $cache->{socket};
                 } else {
@@ -193,9 +193,9 @@ sub _parse_or_request {
         }
         # connect
         if (!$cache) {
-            if ($scheme =~ /tcp|unix/) {
+            if ($srvsch =~ /tcp|unix/) {
                 my $sock;
-                if ($scheme eq 'riap+tcp') {
+                if ($srvsch eq 'riap+tcp') {
                     require IO::Socket::INET;
                     $sock = IO::Socket::INET->new(
                         PeerHost => $host,
@@ -214,7 +214,7 @@ sub _parse_or_request {
                     $self->{_conns}{$cache_key} = {socket=>$sock};
                     $in = $out = $sock;
                 } else {
-                    $e = $scheme eq 'riap+tcp' ?
+                    $e = $srvsch eq 'riap+tcp' ?
                         "Can't connect to TCP socket $host:$port: $e" :
                             "Can't connect to Unix socket $path: $e";
                     $do_retry++; goto RETRY;
@@ -293,7 +293,7 @@ sub _parse_or_request {
             last;
         }
     }
-    return [500, "$e (retried)"];
+    return [500, "$e (tried $attempts times)"];
 }
 
 sub request_tcp {

@@ -1,4 +1,4 @@
-#!perl -T
+#!perl
 
 use 5.010;
 use strict;
@@ -22,11 +22,6 @@ test_parse(
 test_parse(
     name   => 'riap+tcp requires port',
     args   => [call => "riap+tcp://localhost/"],
-    status => 400,
-);
-test_parse(
-    name   => 'riap+tcp requires uri',
-    args   => [call => "riap+tcp://localhost:1234"],
     status => 400,
 );
 test_parse(
