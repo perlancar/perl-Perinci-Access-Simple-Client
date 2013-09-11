@@ -40,11 +40,13 @@ test_parse(
     args   => [call => "riap+unix:"],
     status => 400,
 );
-test_parse(
-    name   => 'riap+unix ok 1',
-    args   => [call => "riap+unix:relpath//Foo/Bar"],
-    result => {args=>undef, host=>undef, path=>'relpath', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
-);
+unless ($^O =~ /Win/) {
+    test_parse(
+        name   => 'riap+unix ok 1',
+        args   => [call => "riap+unix:relpath//Foo/Bar"],
+        result => {args=>undef, host=>undef, path=>'relpath', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
+    );
+}
 test_parse(
     name   => 'riap+unix ok 2 (uri via extra, path is unescaped)',
     args   => [call => "riap+unix:/tmp/abs%20path", {uri=>'/Foo/Bar'}],
