@@ -230,6 +230,7 @@ sub _parse_or_request {
                 require String::ShellQuote;
                 my $cmd = $path . (@$args ? " " . join(" ", map {
                     String::ShellQuote::shell_quote($_) } @$args) : "");
+                $log->tracef("executing cmd: %s", $cmd);
 
                 # using shell
                 #my $pid = IPC::Open2::open2($in, $out, $cmd, @$args);
