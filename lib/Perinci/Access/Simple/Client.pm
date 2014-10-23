@@ -1,19 +1,21 @@
 package Perinci::Access::Simple::Client;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
 use Log::Any '$log';
 
 use Cwd qw(abs_path);
+use Perinci::AccessUtil qw(strip_riap_stuffs_from_res);
 use POSIX qw(:sys_wait_h);
 use Tie::Cache;
 use URI::Split qw(uri_split);
 use URI::Escape;
 
 use parent qw(Perinci::Access::Base);
-
-# VERSION
 
 my @logging_methods = Log::Any->logging_methods();
 
@@ -283,6 +285,7 @@ sub _parse_or_request {
             $self->_delete_cache($cache_key);
             return [500, "Invalid JSON response from server: $e"];
         }
+        strip_riap_stuffs_from_res($res);
         return $res;
 
       RETRY:
