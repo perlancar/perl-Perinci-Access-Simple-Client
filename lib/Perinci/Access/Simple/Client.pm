@@ -144,7 +144,7 @@ sub _parse_or_request {
     my $res;
 
     unless ($which eq 'parse0') {
-        $req = { action=>$action, %{$extra // {}} };
+        $req = { v=>$self->{riap_version}, action=>$action, %{$extra // {}} };
         $uri ||= $req->{uri}; $req->{uri} //= $uri;
         $res = $self->check_request($req);
         return $res if $res;
