@@ -402,8 +402,6 @@ server: either via TCP (where the server can be on a remote computer), Unix
 socket, or a program (where the program can also be on a remote computer, e.g.
 accessed via ssh).
 
-This class uses L<Log::Any> for logging.
-
 
 =head1 METHODS
 
