@@ -1,5 +1,12 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.19    2015-03-05 (PERLANCAR)
+
+	- Adjust to Riap 1.2.3 (remove support of "J" header), this admittedly
+          makes the client cannot handle servers that use Riap 1.2.2 and
+          earlier. So servers should also be upgraded.
+
+
 0.18    2014-10-24 (PERLANCAR)
 
 	- Add attribute: riap_version.
