@@ -255,13 +255,7 @@ sub _parse_or_request {
         $e = $@;
         return [400, "Can't encode request as JSON: $e"] if $e;
 
-        if (length($req_json) > 1000) {
-            $out->write("J" . length($req_json) . "\015\012");
-            $out->write($req_json);
-            $out->write("\015\012");
-        } else {
-            $out->write("j$req_json\015\012");
-        }
+        $out->write("j$req_json\015\012");
         $log->tracef("Sent request to server: %s", $req_json);
 
         # XXX alarm/timeout
@@ -270,16 +264,11 @@ sub _parse_or_request {
         if (!$line) {
             $self->_delete_cache($cache_key);
             return [500, "Empty response from server"];
-        } elsif ($line !~ /^J(\d+)/) {
+        } elsif ($line !~ /^j(.+)/) {
             $self->_delete_cache($cache_key);
             return [500, "Invalid response line from server: $line"];
         }
-        my $res_json;
-        $log->tracef("Reading $1 bytes from server ...");
-        $in->read($res_json, $1);
-        $log->tracef("Got from server: %s", $res_json);
-        $in->getline; # CRLF after response
-        eval { $res = $json->decode($res_json) };
+        eval { $res = $json->decode($1) };
         $e = $@;
         if ($e) {
             $self->_delete_cache($cache_key);
