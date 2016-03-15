@@ -1,5 +1,12 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.21    2016-03-16 (PERLANCAR)
+
+	- No functional changes.
+
+	- Replace JSON with JSON::MaybeXS.
+
+
 0.20    2015-09-06 (PERLANCAR)
 
 	- No functional changes.
