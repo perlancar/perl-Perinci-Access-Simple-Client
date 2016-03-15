@@ -160,8 +160,8 @@ sub _parse_or_request {
     $log->tracef("Parsed URI, scheme=%s, host=%s, port=%s, path=%s, args=%s, ".
                      "uri=%s", $srvsch, $host, $port, $path, $args, $uri);
 
-    require JSON;
-    state $json = JSON->new->allow_nonref;
+    require JSON::MaybeXS;
+    state $json = JSON::MaybeXS->new->allow_nonref;
 
     my $attempts = 0;
     my $do_retry;
