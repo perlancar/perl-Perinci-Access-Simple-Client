@@ -1,5 +1,13 @@
 Revision history for Perinci-Access-Simple-Client
 
+0.22    2016-10-07 (PERLANCAR)
+
+        - No functional changes.
+
+        - Adjustment to test scripts under Windows (on Windows, Cwd::abs_path()
+          needs path to actually exist).
+
+
 0.21    2016-03-16 (PERLANCAR)
 
 	- No functional changes.
