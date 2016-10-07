@@ -4,8 +4,20 @@ use 5.010;
 use strict;
 use warnings;
 
+use File::chdir;
+use File::Temp qw(tempdir);
 use Perinci::Access::Simple::Client;
 use Test::More 0.98;
+
+# on Windows, abs_path() requires that path actually exists
+my $tempdir = tempdir(CLEANUP => 1);
+{
+    my $fh;
+    open $fh, ">", "path1";
+    open $fh, ">", "path two";
+}
+
+$CWD = $tempdir;
 
 my $pa = Perinci::Access::Simple::Client->new;
 
@@ -40,17 +52,15 @@ test_parse(
     args   => [call => "riap+unix:"],
     status => 400,
 );
-unless ($^O =~ /Win/) {
-    test_parse(
-        name   => 'riap+unix ok 1',
-        args   => [call => "riap+unix:relpath//Foo/Bar"],
-        result => {args=>undef, host=>undef, path=>'relpath', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
-    );
-}
+test_parse(
+    name   => 'riap+unix ok 1',
+    args   => [call => "riap+unix:path1//Foo/Bar"],
+    result => {args=>undef, host=>undef, path=>'path1', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
+);
 test_parse(
     name   => 'riap+unix ok 2 (uri via extra, path is unescaped)',
-    args   => [call => "riap+unix:/tmp/abs%20path", {uri=>'/Foo/Bar'}],
-    result => {args=>undef, host=>undef, path=>'/tmp/abs path', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
+    args   => [call => "riap+unix:$tempdir/path%202", {uri=>'/Foo/Bar'}],
+    result => {args=>undef, host=>undef, path=>"$tempdir/path 2", port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
 );
 
 test_parse(
@@ -60,21 +70,23 @@ test_parse(
 );
 test_parse(
     name   => 'riap+pipe ok 1',
-    args   => [call => "riap+pipe:/tmp/program%201//arg1/arg%202//Foo/Bar"],
-    result => {args=>['arg1', 'arg 2'], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
+    args   => [call => "riap+pipe:$tempdir/path%202//arg1/arg%202//Foo/Bar"],
+    result => {args=>['arg1', 'arg 2'], host=>undef, path=>"$tempdir/path 2", port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
 );
 test_parse(
     name   => 'riap+pipe ok 2 (uri via extra)',
-    args   => [call => "riap+pipe:/tmp/program%201//arg1/arg%202", {uri=>'/Foo/Bar'}],
-    result => {args=>['arg1', 'arg 2'], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
+    args   => [call => "riap+pipe:$tempdir/path%202//arg1/arg%202", {uri=>'/Foo/Bar'}],
+    result => {args=>['arg1', 'arg 2'], host=>undef, path=>"$tempdir/path 2", port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
 );
 test_parse(
     name   => 'riap+pipe ok 2 (uri via extra, no args)',
-    args   => [call => "riap+pipe:/tmp/program%201", {uri=>'/Foo/Bar'}],
-    result => {args=>[], host=>undef, path=>'/tmp/program 1', port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
+    args   => [call => "riap+pipe:$tempdir/path%202", {uri=>'/Foo/Bar'}],
+    result => {args=>[], host=>undef, path=>"$tempdir/path 2", port=>undef, scheme=>'riap+pipe', uri=>'/Foo/Bar'},
 );
 
 subtest "parse_url()" => sub {
+    plan skip_all => "/var/run does not exist" unless -d "/var/run";
+
     my $pa = Perinci::Access::Simple::Client->new;
     is_deeply($pa->parse_url("riap+unix:/var/run/apid.sock//Foo/bar"),
               {proto=>"riap+unix", path=>"/Foo/bar", unix_sock_path=>"/var/run/apid.sock"},
