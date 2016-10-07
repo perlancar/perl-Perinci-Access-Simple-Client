@@ -11,13 +11,12 @@ use Test::More 0.98;
 
 # on Windows, abs_path() requires that path actually exists
 my $tempdir = tempdir(CLEANUP => 1);
+$CWD = $tempdir;
 {
     my $fh;
     open $fh, ">", "path1";
-    open $fh, ">", "path two";
+    open $fh, ">", "path 2";
 }
-
-$CWD = $tempdir;
 
 my $pa = Perinci::Access::Simple::Client->new;
 
@@ -54,8 +53,8 @@ test_parse(
 );
 test_parse(
     name   => 'riap+unix ok 1',
-    args   => [call => "riap+unix:path1//Foo/Bar"],
-    result => {args=>undef, host=>undef, path=>'path1', port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
+    args   => [call => "riap+unix:$tempdir/path1//Foo/Bar"],
+    result => {args=>undef, host=>undef, path=>"$tempdir/path1", port=>undef, scheme=>'riap+unix', uri=>'/Foo/Bar'},
 );
 test_parse(
     name   => 'riap+unix ok 2 (uri via extra, path is unescaped)',
