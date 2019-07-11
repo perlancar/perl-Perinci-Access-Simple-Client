@@ -1,11 +1,11 @@
-0.23    2017-07-03 (PERLANCAR)
+0.23    2017-07-03  Released-By: PERLANCAR
 
 	- No functional changes.
 
 	- Switch from Log::Any to Log::ger.
 
 
-0.22    2016-10-07 (PERLANCAR)
+0.22    2016-10-07  Released-By: PERLANCAR
 
         - No functional changes.
 
@@ -13,14 +13,14 @@
           needs path to actually exist).
 
 
-0.21    2016-03-16 (PERLANCAR)
+0.21    2016-03-16  Released-By: PERLANCAR
 
 	- No functional changes.
 
 	- Replace JSON with JSON::MaybeXS.
 
 
-0.20    2015-09-06 (PERLANCAR)
+0.20    2015-09-06  Released-By: PERLANCAR
 
 	- No functional changes.
 
@@ -29,47 +29,47 @@
 	  requirement.
 
 
-0.19    2015-03-05 (PERLANCAR)
+0.19    2015-03-05  Released-By: PERLANCAR
 
 	- Adjust to Riap 1.2.3 (remove support of "J" header), this admittedly
           makes the client cannot handle servers that use Riap 1.2.2 and
           earlier. So servers should also be upgraded.
 
 
-0.18    2014-10-24 (PERLANCAR)
+0.18    2014-10-24  Released-By: PERLANCAR
 
 	- Add attribute: riap_version.
 
 
-0.17    2014-10-23 (PERLANCAR)
+0.17    2014-10-23  Released-By: PERLANCAR
 
 	- Add Riap 1.2 support (strip Riap attributes from result metadata,
 	  decoding of base64-encoded result).
 
 
-0.16     2013-09-11 (SHARYANTO)
+0.16     2013-09-11  Released-By: SHARYANTO
 
          - No functional changes. Skip one riap+unix parse test on Windows due
            to error in abs_path() (relpath) if file does not exist. I'm trying
            to make Perinci::CmdLine work on Windows.
 
 
-0.15     2013-09-08 (SHARYANTO)
+0.15     2013-09-08  Released-By: SHARYANTO
 
          - No functional changes. Replace URI with URI::Split.
 
 
-0.14     2013-08-22 (SHARYANTO)
+0.14     2013-08-22  Released-By: SHARYANTO
 
          - No functional changes. Adjust to Perinci::Access::Base 0.29.
 
 
-0.13     2013-08-13 (SHARYANTO)
+0.13     2013-08-13  Released-By: SHARYANTO
 
          - Support parse_url().
 
 
-0.12     2013-04-02 (SHARYANTO)
+0.12     2013-04-02  Released-By: SHARYANTO
 
          [ENHANCEMENTS]
 
@@ -82,45 +82,45 @@
          - Add some tests for $server_url parsing.
 
 
-0.11     2013-03-28 (SHARYANTO)
+0.11     2013-03-28  Released-By: SHARYANTO
 
          - No functional changes. Fix example in Synopsis (third time's the
            charm).
 
 
-0.10     2013-03-28 (SHARYANTO)
+0.10     2013-03-28  Released-By: SHARYANTO
 
          - No functional changes. Fix example in Synopsis (take 2, doh).
 
 
-0.09     2013-03-28 (SHARYANTO)
+0.09     2013-03-28  Released-By: SHARYANTO
 
          - No functional changes. Fix example in Synopsis.
 
 
-0.08     2013-03-28 (SHARYANTO)
+0.08     2013-03-28  Released-By: SHARYANTO
 
          - No functional changes. Add Synopsis on using the riap+unix and
            riap+pipe schemes.
 
 
-0.07     2012-08-01 (SHARYANTO)
+0.07     2012-08-01  Released-By: SHARYANTO
 
          - No functional changes. Fixed avoid Perl undef warning in DESTROY()
            (take 2).
 
 
-0.06     2012-08-01 (SHARYANTO)
+0.06     2012-08-01  Released-By: SHARYANTO
 
          - No functional changes. Fixed avoid Perl undef warning in DESTROY().
 
 
-0.05     2012-08-01 (SHARYANTO)
+0.05     2012-08-01  Released-By: SHARYANTO
 
          - No functional changes. Fixed confused 'in' and 'out' in pipe.
 
 
-0.04     2012-08-01 (SHARYANTO)
+0.04     2012-08-01  Released-By: SHARYANTO
 
          - Rename module from Perinci::Access::TCP::Client to
            Perinci::Access::Simple::Client, following the spec name change
@@ -129,17 +129,17 @@
          - Support accessing server via pipe (riap+pipe scheme).
 
 
-0.03     2012-07-25 (SHARYANTO)
+0.03     2012-07-25  Released-By: SHARYANTO
 
          - Fix: don't mix buffered and unbuffered I/O, use buffered (getline()
            is convenient)
 
 
-0.02     2012-07-19 (SHARYANTO)
+0.02     2012-07-19  Released-By: SHARYANTO
 
          - Support single-line request (Riap 1.1.15).
 
 
-0.01     2012-07-19 (SHARYANTO)
+0.01     2012-07-19  Released-By: SHARYANTO
 
          - First release.
